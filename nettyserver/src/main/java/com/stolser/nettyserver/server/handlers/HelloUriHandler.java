@@ -20,11 +20,16 @@ public class HelloUriHandler extends SimpleChannelInboundHandler<FullHttpRequest
 	@Override
 	protected void channelRead0(final ChannelHandlerContext context, FullHttpRequest request) throws Exception {
 		String content = "Hello World";
-		FullHttpResponse response = new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.OK, Unpooled.wrappedBuffer(
+		final FullHttpResponse response = new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.OK, Unpooled.wrappedBuffer(
 				content.getBytes()));
 		response.headers().set(CONTENT_TYPE, "text/html");
 		
-		context.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
+		ScheduledFuture<?> future = context.channel().eventLoop().schedule(new Runnable() {
+			@Override 
+			public void run() {
+				context.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
+			}
+		}, 10, TimeUnit.SECONDS);
 	}
 	
 }

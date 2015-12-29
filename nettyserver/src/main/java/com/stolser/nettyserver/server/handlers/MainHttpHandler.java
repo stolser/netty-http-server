@@ -35,12 +35,23 @@ public class MainHttpHandler extends SimpleChannelInboundHandler<FullHttpRequest
 	private final StringBuilder defaultContent = new StringBuilder("<h1>Oops! Nothing found!!!</h1>");
 	@Override
 	protected void channelRead0(final ChannelHandlerContext context, FullHttpRequest request) throws Exception {
-		
+		logger.debug("MainHttpHandler.channelRead0");
 		String requestedUri = request.getUri();
-		
+
 		if("/hello".equalsIgnoreCase(requestedUri)) {
-			//context.pipeline().addLast("helloHandler", new HelloUriHandler());
+			context.pipeline().addLast("helloHandler", new HelloUriHandler());
 			context.fireChannelRead(request.retain());
+			
+		} else if("/redirect".equalsIgnoreCase(requestedUri)) {
+			response = new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.FOUND);
+			response.headers().set(LOCATION, "http://example.com");
+			context.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
+			
+		} else if("/status".equalsIgnoreCase(requestedUri)) {
+			final EventExecutorGroup group = new DefaultEventExecutorGroup(16);
+			context.pipeline().addLast(group, "statusHandler", new StatusUriHandler());
+			context.fireChannelRead(request.retain());
+			
 		} else {
 			response = new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.OK, Unpooled.wrappedBuffer(
 					(defaultContent.toString()).getBytes()));
@@ -53,5 +64,5 @@ public class MainHttpHandler extends SimpleChannelInboundHandler<FullHttpRequest
 		logger.error("Exception during pipelining.", cause);
 		ctx.close();
 	}
-	
+
 }
