@@ -1,9 +1,14 @@
 package com.stolser.nettyserver.server.handlers;
 
+import java.net.SocketAddress;
+import java.net.URI;
+import java.util.Date;
 import java.util.Random;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.stolser.nettyserver.server.data.ConnectionData;
 
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
@@ -15,24 +20,31 @@ import io.netty.util.ReferenceCountUtil;
 
 public class StatisticsCollector extends ChannelInboundHandlerAdapter {
 	static private final Logger logger = LoggerFactory.getLogger(StatisticsCollector.class);
-	public int randomInt = new Random().nextInt(1_000_000);
+	private ConnectionData data;
+	private FullHttpRequest request;
+	private ChannelHandlerContext context;
 
 	@Override
 	public void channelRead(ChannelHandlerContext context, Object message) {
 		logger.debug("StatisticsCollector.channelRead");
-		FullHttpRequest request = (FullHttpRequest)message;
-		long readBytes = 
-				((ChannelTrafficShapingHandler)context.pipeline().get("trafficCounter")).trafficCounter().cumulativeReadBytes();
-		long writtenBytes = 
-				((ChannelTrafficShapingHandler)context.pipeline().get("trafficCounter")).trafficCounter().cumulativeWrittenBytes();
-		logger.debug("uri = {}; randomInt = {}", request.getUri(), randomInt);
+		request = (FullHttpRequest)message;
+		this.context = context;
+		
+		createConnectionData();
 
-		/* 
-		 * - get all necessary info from the request;
-		 * - create new ConnectionData obj;
-		 */ 
-		
 		context.fireChannelRead(message);
+	}
+
+	private void createConnectionData() {
+		SocketAddress sourceIp = context.channel().remoteAddress();
+		String uri = request.getUri();
+		Date timestamp = new Date();
 		
+		data = new ConnectionData(sourceIp, uri, timestamp);
+		
+	}
+
+	public ConnectionData getData() {
+		return data;
 	}
 }

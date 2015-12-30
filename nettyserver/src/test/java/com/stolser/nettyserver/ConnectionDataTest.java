@@ -18,7 +18,7 @@ public class ConnectionDataTest {
 	@Test
 	public void equalsTested() throws URISyntaxException {
 		InetSocketAddress address = new InetSocketAddress("127.0.0.1", 8080);
-		URI uri = new URI("example.com");
+		String uri = "example.com";
 		Date timestamp = new Date();
 		ConnectionData conn1 = new ConnectionData(address, uri, timestamp);
 		ConnectionData conn2 = new ConnectionData(address, uri, timestamp);

@@ -2,7 +2,7 @@ package com.stolser.nettyserver.server;
 
 import com.stolser.nettyserver.server.handlers.ActiveConnectionsCounter;
 import com.stolser.nettyserver.server.handlers.MainHttpHandler;
-import com.stolser.nettyserver.server.handlers.StatisticsPersister;
+import com.stolser.nettyserver.server.handlers.TrafficCollector;
 import com.stolser.nettyserver.server.handlers.StatisticsCollector;
 
 import io.netty.channel.*;
@@ -18,12 +18,12 @@ public class HttpServerInitializer extends ChannelInitializer<SocketChannel>{
 	@Override
 	protected void initChannel(SocketChannel channel) throws Exception {
 		ChannelPipeline pipeline = channel.pipeline();
-		pipeline.addLast("statisticsSaver", new StatisticsPersister());
+		pipeline.addLast("trafficCollector", new TrafficCollector());
 		pipeline.addLast("trafficCounter", new ChannelTrafficShapingHandler(1000));
 		pipeline.addLast("connCounter", activeConnectionsCounter);
 		pipeline.addLast("codec", new HttpServerCodec());
 		pipeline.addLast("aggregator", new HttpObjectAggregator(MAX_CONTENT_LENGTH));
-		pipeline.addLast("statistics", new StatisticsCollector());
+		pipeline.addLast("requestDataCollector", new StatisticsCollector());
 		pipeline.addLast("mainHandler", new MainHttpHandler());
 	}
 

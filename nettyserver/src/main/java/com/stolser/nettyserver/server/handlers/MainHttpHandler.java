@@ -41,7 +41,8 @@ public class MainHttpHandler extends SimpleChannelInboundHandler<FullHttpRequest
 	protected void channelRead0(final ChannelHandlerContext context, FullHttpRequest request) throws Exception {
 		this.request = request;
 		this.context = context;
-		logger.debug("MainHttpHandler.channelRead0");
+
+		logger.debug("MainHttpHandler.channelRead0; uri = {}", request.getUri());
 		String requestedUri = request.getUri();
 
 		if("/hello".equalsIgnoreCase(requestedUri)) {
@@ -53,12 +54,12 @@ public class MainHttpHandler extends SimpleChannelInboundHandler<FullHttpRequest
 			context.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
 			
 		} else if("/status".equalsIgnoreCase(requestedUri)) {
-			final EventExecutorGroup group = new DefaultEventExecutorGroup(16);
+			EventExecutorGroup group = new DefaultEventExecutorGroup(16);
 			context.pipeline().addLast(group, "statusHandler", new StatusUriHandler());
 			context.fireChannelRead(request.retain());
 			
 		} else {
-			response = new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.OK, Unpooled.wrappedBuffer(
+			response = new DefaultFullHttpResponse(HTTP_1_1, OK, Unpooled.wrappedBuffer(
 					(defaultContent.toString()).getBytes()));
 			context.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
 		}

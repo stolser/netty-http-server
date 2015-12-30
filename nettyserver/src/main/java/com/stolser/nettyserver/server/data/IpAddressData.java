@@ -8,7 +8,7 @@ import java.util.List;
 public class IpAddressData {
 	private SocketAddress ipAddress;
 	private int totalRequests;
-	private List<URI> uniqueRequests;
+	private List<String> uniqueRequests;
 	private Date timeOfLastRequest;
 	
 	public IpAddressData(SocketAddress ipAddress) {
@@ -16,14 +16,14 @@ public class IpAddressData {
 			throw new IllegalArgumentException("ipAddress cannot be null.");
 		}
 		this.ipAddress = ipAddress;
-		this.uniqueRequests = new ArrayList<URI>();
+		this.uniqueRequests = new ArrayList<String>();
 	}
 
 	public int getTotalRequests() {
 		return totalRequests;
 	}
 	
-	public boolean addUniqueRequest(URI newUri) {
+	public boolean addRequestIfUnique(String newUri) {
 		if(newUri == null) {
 			throw new IllegalArgumentException("URI cannot be null.");
 		}
@@ -46,8 +46,8 @@ public class IpAddressData {
 		return false;
 	}
 
-	public void setTotalRequests(int totalRequests) {
-		this.totalRequests = totalRequests;
+	public void increaseTotalRequestsBy(int number) {
+		this.totalRequests += number;
 	}
 
 	public Date getTimeOfLastRequest() {
@@ -62,7 +62,7 @@ public class IpAddressData {
 		return ipAddress;
 	}
 
-	public List<URI> getUniqueRequests() {
+	public List<String> getUniqueRequests() {
 		return uniqueRequests;
 	}
 	

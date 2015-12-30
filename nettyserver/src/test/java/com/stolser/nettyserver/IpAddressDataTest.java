@@ -3,6 +3,7 @@ package com.stolser.nettyserver;
 import static org.junit.Assert.*;
 
 import java.net.InetSocketAddress;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -22,29 +23,29 @@ public class IpAddressDataTest {
 
 	@Test
 	public void addUniqueRequestsTested() throws URISyntaxException {
-		ip.addUniqueRequest(new URI("example.com"));
-		ip.addUniqueRequest(new URI("google.com.ua"));
-		boolean result = ip.addUniqueRequest(new URI("google.com.ua"));
+		ip.addRequestIfUnique(new String("example.com"));
+		ip.addRequestIfUnique(new String("google.com.ua"));
+		boolean result = ip.addRequestIfUnique(new String("google.com.ua"));
 		assertFalse(result);
 		
-		result = ip.addUniqueRequest(new URI("localhost"));
+		result = ip.addRequestIfUnique(new String("localhost"));
 		assertTrue(result);
 		
-		ip.addUniqueRequest(new URI("example.com"));
+		ip.addRequestIfUnique(new String("example.com"));
 		assertEquals(3, ip.getUniqueRequests().size());
 	}
 	
 	@Test(expected = IllegalArgumentException.class)
 	public void addUniqueRequestsWhenNullPassed() {
-		ip.addUniqueRequest(null);
+		ip.addRequestIfUnique(null);
 	}
 	
 	@Test
 	public void containsTested() throws URISyntaxException {
-		ip.addUniqueRequest(new URI("example.com"));
+		ip.addRequestIfUnique(new String("example.com"));
 		
-		assertTrue(ip.contains(new URI("example.com")));
-		assertFalse(ip.contains(new URI("example.com.ua")));
+		assertTrue(ip.contains(new String("example.com")));
+		assertFalse(ip.contains(new String("example.com.ua")));
 	}
 	
 

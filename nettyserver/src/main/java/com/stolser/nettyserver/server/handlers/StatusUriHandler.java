@@ -5,8 +5,21 @@ import static io.netty.handler.codec.http.HttpResponseStatus.*;
 import static io.netty.handler.codec.http.HttpVersion.*;
 import static io.netty.handler.codec.http.HttpHeaders.Names.*;
 
+import java.io.*;
+import java.net.URI;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.stolser.nettyserver.server.data.ConnectionData;
+import com.stolser.nettyserver.server.data.FullStatisticsData;
+import com.stolser.nettyserver.server.data.IpAddressData;
+import com.stolser.nettyserver.server.data.StatisticsWarehouse;
+import com.stolser.nettyserver.server.data.XMLStatisticsWarehouse;
 
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFutureListener;
@@ -20,24 +33,40 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 
 public class StatusUriHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
 	static private final Logger logger = LoggerFactory.getLogger(StatusUriHandler.class);
-	private String responseContent = "<h1 style='color:red;text-align:center;'>Statistics table</h1>";
+	static private final String FILE_NAME = "statistics.data";
+	private String responseContent;
+	private FullStatisticsData fullData;
+	private ChannelHandlerContext context;
+
 	@Override
 	protected void channelRead0(final ChannelHandlerContext context, FullHttpRequest request) throws Exception {
 		logger.debug("StatusUriHandler.channelRead0");
-		/*
-		 * - get info from the statistics.xml into objects;
-		 * - generate a responseText - html tables;
-		 * - sent responseText:
-		 	response = new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.OK, Unpooled.wrappedBuffer(
-					(defaultContent.toString()).getBytes()));
-			context.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
-		 * - 
-		 * */
-		FullHttpResponse response = new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.OK, Unpooled.wrappedBuffer(
+		this.context = context;
+		
+		retrieveStatData();
+		generateResponseContent();
+		createAndSendFullHttpResponse();	
+	}
+
+	private void retrieveStatData() {
+		Path path = Paths.get(FILE_NAME);
+		try(ObjectInputStream in = new ObjectInputStream(new BufferedInputStream(
+								new FileInputStream(path.toFile())))) {
+			fullData = (FullStatisticsData)in.readObject();
+		} catch (Exception e) {
+			logger.debug("exception during reading a file {}", FILE_NAME, e);
+		}
+	}
+	
+	private void generateResponseContent() {
+		
+		responseContent = "<h1 style='color:red;'>Statistics</h1>";
+	}
+	
+	private void createAndSendFullHttpResponse() {
+		FullHttpResponse response = new DefaultFullHttpResponse(HTTP_1_1, OK, Unpooled.wrappedBuffer(
 				responseContent.getBytes()));
 		response.headers().set(CONTENT_TYPE, "text/html");
 		context.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
-		
 	}
-
 }
