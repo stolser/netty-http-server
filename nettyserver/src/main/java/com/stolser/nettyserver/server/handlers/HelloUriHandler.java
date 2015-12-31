@@ -19,7 +19,7 @@ public class HelloUriHandler extends SimpleChannelInboundHandler<FullHttpRequest
 
 	@Override
 	protected void channelRead0(final ChannelHandlerContext context, FullHttpRequest request) throws Exception {
-		String content = "Hello World";
+		String content = "<h1 style='color:blue;font-size:45;display:block;text-align:center;margin-top:200px;'>Hello World</h1>";
 		final FullHttpResponse response = new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.OK, Unpooled.wrappedBuffer(
 				content.getBytes()));
 		response.headers().set(CONTENT_TYPE, "text/html");
