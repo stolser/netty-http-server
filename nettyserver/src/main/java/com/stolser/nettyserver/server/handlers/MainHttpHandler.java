@@ -35,6 +35,7 @@ public class MainHttpHandler extends SimpleChannelInboundHandler<FullHttpRequest
 	private ChannelHandlerContext context;
 	private FullHttpRequest request;
 	private FullHttpResponse response;
+	private String redirectUrl;
 	/**A Buffer that stores the response content */
 	private final StringBuilder defaultContent = new StringBuilder("<h1>Oops! Nothing found!!!</h1>");
 	@Override
@@ -72,12 +73,12 @@ public class MainHttpHandler extends SimpleChannelInboundHandler<FullHttpRequest
 	}
 
 	private void createRedirectResponse() {
-		String redirectUrl = getRedirectUrl();
+		redirectUrl = retrieveRedirectUrl();
 		response = new DefaultFullHttpResponse(HTTP_1_1, FOUND);
 		response.headers().set(LOCATION, redirectUrl);
 	}
 
-	private String getRedirectUrl() {
+	private String retrieveRedirectUrl() {
 		String url = null;
 		QueryStringDecoder queryStringDecoder = new QueryStringDecoder(request.getUri());
 		Map<String, List<String>> params = queryStringDecoder.parameters();
@@ -92,5 +93,7 @@ public class MainHttpHandler extends SimpleChannelInboundHandler<FullHttpRequest
 		return url;
 	}
 
-
+	public String getRedirectUrl() {
+		return redirectUrl;
+	}
 }

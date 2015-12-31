@@ -44,8 +44,8 @@ public class IpAddressDataTest {
 	public void containsTested() throws URISyntaxException {
 		ip.addRequestIfUnique(new String("example.com"));
 		
-		assertTrue(ip.contains(new String("example.com")));
-		assertFalse(ip.contains(new String("example.com.ua")));
+		assertTrue(ip.getUniqueRequests().contains(new String("example.com")));
+		assertFalse(ip.getUniqueRequests().contains(new String("example.com.ua")));
 	}
 	
 

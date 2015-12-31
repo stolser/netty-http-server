@@ -6,9 +6,11 @@ import java.net.URI;
 import java.util.Date;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.google.common.base.Preconditions;
+
 public class ConnectionData implements Serializable {
 	private static final long serialVersionUID = 1234567L;
-	private static AtomicInteger nextId = new AtomicInteger(1);
+	private static AtomicInteger nextId;
 	private int id;
 	private SocketAddress sourceIp;
 	private String uri;
@@ -17,7 +19,15 @@ public class ConnectionData implements Serializable {
 	private long receivedBytes;
 	private double speed;
 	
+	static {
+		nextId = new AtomicInteger(1);
+	}
+	
 	public ConnectionData(SocketAddress sourceIp, String uri, Date timestamp) {
+		Preconditions.checkNotNull(sourceIp, "source ip may not be null.");
+		Preconditions.checkNotNull(uri, "uri may not be null.");
+		Preconditions.checkNotNull(timestamp, "timestamp may not be null.");
+		
 		this.id = nextId.getAndIncrement();
 		this.sourceIp = sourceIp;
 		this.uri = uri;
@@ -29,6 +39,7 @@ public class ConnectionData implements Serializable {
 	}
 
 	public ConnectionData setSentBytes(long sentBytes) {
+		Preconditions.checkArgument(sentBytes >= 0, "you cannot send less than zero bytes.)");
 		this.sentBytes = sentBytes;
 		return this;
 	}
@@ -38,6 +49,7 @@ public class ConnectionData implements Serializable {
 	}
 
 	public ConnectionData setReceivedBytes(long receivedBytes) {
+		Preconditions.checkArgument(receivedBytes >= 0, "you cannot receive less than zero bytes.)");
 		this.receivedBytes = receivedBytes;
 		return this;
 	}
@@ -47,6 +59,7 @@ public class ConnectionData implements Serializable {
 	}
 
 	public ConnectionData setSpeed(double speed) {
+		Preconditions.checkArgument(speed >= 0, "speed cannot be less than zero bytes per second.)");
 		this.speed = speed;
 		return this;
 	}

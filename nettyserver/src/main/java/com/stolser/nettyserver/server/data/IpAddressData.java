@@ -1,22 +1,33 @@
 package com.stolser.nettyserver.server.data;
 
+import java.io.Serializable;
 import java.net.*;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-public class IpAddressData {
+import com.google.common.base.Preconditions;
+
+public class IpAddressData implements Serializable {
 	private SocketAddress ipAddress;
 	private int totalRequests;
 	private List<String> uniqueRequests;
 	private Date timeOfLastRequest;
 	
 	public IpAddressData(SocketAddress ipAddress) {
-		if(ipAddress == null) {
-			throw new IllegalArgumentException("ipAddress cannot be null.");
-		}
+		this(ipAddress, 0, new ArrayList<String>(), null);
+	}
+
+	public IpAddressData(SocketAddress ipAddress, int totalRequests, List<String> uniqueRequests,
+			Date timeOfLastRequest) {
+		Preconditions.checkNotNull(ipAddress, "ip may not be null.");
+		Preconditions.checkArgument(totalRequests >= 0, "you cannot increase by a negative value.");
+		Preconditions.checkNotNull(uniqueRequests, "if no requests yet, pass an empty list<String>.");
+				
 		this.ipAddress = ipAddress;
-		this.uniqueRequests = new ArrayList<String>();
+		this.totalRequests = totalRequests;
+		this.uniqueRequests = uniqueRequests;
+		this.timeOfLastRequest = timeOfLastRequest;
 	}
 
 	public int getTotalRequests() {
@@ -24,10 +35,7 @@ public class IpAddressData {
 	}
 	
 	public boolean addRequestIfUnique(String newUri) {
-		if(newUri == null) {
-			throw new IllegalArgumentException("URI cannot be null.");
-		}
-		if(contains(newUri)) {
+		if((newUri == null) || (uniqueRequests.contains(newUri))) {
 			return false;
 		} else {
 			uniqueRequests.add(newUri);
@@ -35,18 +43,8 @@ public class IpAddressData {
 		}
 	}
 	
-	public boolean contains(Object o) {
-		if(o == null) return false;
-		
-		for (int i = 0; i < uniqueRequests.size(); i++) {
-			if (o.equals(uniqueRequests.get(i))) 
-				return true;
-		} 
-		
-		return false;
-	}
-
 	public void increaseTotalRequestsBy(int number) {
+		Preconditions.checkArgument(number >= 0, "you cannot increase by a negative value.");
 		this.totalRequests += number;
 	}
 
@@ -55,6 +53,7 @@ public class IpAddressData {
 	}
 
 	public void setTimeOfLastRequest(Date timeOfLastRequest) {
+		Preconditions.checkNotNull(ipAddress, "last time may not be null.");
 		this.timeOfLastRequest = timeOfLastRequest;
 	}
 

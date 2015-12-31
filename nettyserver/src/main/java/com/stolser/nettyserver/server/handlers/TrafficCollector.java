@@ -6,6 +6,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -50,11 +51,16 @@ public class TrafficCollector extends ChannelOutboundHandlerAdapter {
 				.trafficCounter()
 				.cumulativeWrittenBytes();
 		double speed = 25.78;
-		int numberOfActiveConn = 10; //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+		int numberOfActiveConn = ((ActiveConnectionsCounter)context.pipeline()
+				.get("connCounter")).getCounter();
+		String redirect = ((MainHttpHandler)context.pipeline()
+				.get("mainHandler")).getRedirectUrl();
+		
 		connData.setReceivedBytes(receivedBytes).setSentBytes(sentBytes).setSpeed(speed);
 
-		logger.debug("TrafficCollector.write; sent = {}; received = {}; fullData = {}", sentBytes, receivedBytes, connData);
+/*		logger.debug("TrafficCollector.write; ipAddress = {}; hostname = {}"
+				, ((InetSocketAddress)connData.getSourceIp()).getAddress()
+				, ((InetSocketAddress)connData.getSourceIp()).getHostName());*/
 		
 		new Thread(new Runnable() {
 			public void run() {
@@ -67,20 +73,18 @@ public class TrafficCollector extends ChannelOutboundHandlerAdapter {
 				} catch (Exception e) {
 					logger.debug("exception during reading a file", e);
 				}
-
-				fullData.update(connData, numberOfActiveConn);
+				
+				fullData.update(connData, numberOfActiveConn, redirect);
 
 				try {
-					//erase the old content
-					new FileOutputStream(Paths.get(FILE_NAME).toFile()).close();
+					new FileOutputStream(Paths.get(FILE_NAME).toFile()).close(); //erase the old file content
 				} catch (Exception e) {
 					logger.debug("exception during erasing the file {}", FILE_NAME, e);
 				}
 
 				try(ObjectOutputStream out = new ObjectOutputStream(new BufferedOutputStream(
 								new FileOutputStream(path.toFile())))) {
-					
-					fullData.fillWithDummyData();
+					logger.debug("{}", fullData);
 					out.writeObject(fullData);
 				} catch (Exception e) {
 					logger.debug("exception during writing into the file {}", FILE_NAME, e);

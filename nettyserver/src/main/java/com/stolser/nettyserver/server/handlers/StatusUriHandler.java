@@ -33,7 +33,7 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 
 public class StatusUriHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
 	static private final Logger logger = LoggerFactory.getLogger(StatusUriHandler.class);
-	static private final String FILE_NAME = "statistics.data";
+	static private final String STAT_FILE_NAME = "statistics.data";
 	private String responseContent;
 	private FullStatisticsData fullData;
 	private ChannelHandlerContext context;
@@ -49,18 +49,17 @@ public class StatusUriHandler extends SimpleChannelInboundHandler<FullHttpReques
 	}
 
 	private void retrieveStatData() {
-		Path path = Paths.get(FILE_NAME);
+		Path path = Paths.get(STAT_FILE_NAME);
 		try(ObjectInputStream in = new ObjectInputStream(new BufferedInputStream(
 								new FileInputStream(path.toFile())))) {
 			fullData = (FullStatisticsData)in.readObject();
 		} catch (Exception e) {
-			logger.debug("exception during reading a file {}", FILE_NAME, e);
+			logger.debug("exception during reading a file {}", STAT_FILE_NAME, e);
 		}
 	}
 	
 	private void generateResponseContent() {
-		
-		responseContent = "<h1 style='color:red;'>Statistics</h1>";
+		responseContent = fullData.generateHtmlContent();
 	}
 	
 	private void createAndSendFullHttpResponse() {
