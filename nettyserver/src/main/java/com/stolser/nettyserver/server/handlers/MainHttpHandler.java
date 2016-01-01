@@ -36,8 +36,14 @@ public class MainHttpHandler extends SimpleChannelInboundHandler<FullHttpRequest
 	private FullHttpRequest request;
 	private FullHttpResponse response;
 	private String redirectUrl;
+	private String storageFileName;
 	/**A Buffer that stores the response content */
 	private final StringBuilder defaultContent = new StringBuilder("<h1>Oops! Nothing found!!!</h1>");
+	
+	public MainHttpHandler(String storageFileName) {
+		this.storageFileName = storageFileName;
+	}
+
 	@Override
 	protected void channelRead0(final ChannelHandlerContext context, FullHttpRequest request) throws Exception {
 		this.request = request;
@@ -56,7 +62,7 @@ public class MainHttpHandler extends SimpleChannelInboundHandler<FullHttpRequest
 			
 		} else if("/status".equalsIgnoreCase(requestedUri)) {
 			EventExecutorGroup group = new DefaultEventExecutorGroup(16);
-			context.pipeline().addLast(group, "statusHandler", new StatusUriHandler());
+			context.pipeline().addLast(group, "statusHandler", new StatusUriHandler(storageFileName));
 			context.fireChannelRead(request.retain());
 			
 		} else {

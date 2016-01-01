@@ -20,10 +20,10 @@ import javax.xml.stream.events.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.stolser.nettyserver.server.handlers.StatisticsCollector;
+import com.stolser.nettyserver.server.handlers.RequestDataCollector;
 
-public class XMLStatisticsWarehouse implements StatisticsWarehouse {
-	static private final Logger logger = LoggerFactory.getLogger(XMLStatisticsWarehouse.class);
+public class XMLStatisticsStorage implements StatisticsDataStorage {
+	static private final Logger logger = LoggerFactory.getLogger(XMLStatisticsStorage.class);
 	private List<IpAddressData> ipStatistics;
 	private List<ConnectionData> connectionStatistics;
 	private Map<URI, Integer> redirectStatistics;
@@ -39,27 +39,11 @@ public class XMLStatisticsWarehouse implements StatisticsWarehouse {
 	static final String REDIRECTs = "redirects";
 	static final String REDIRECT = "redirect";
 
-	public XMLStatisticsWarehouse(String baseFileName) {
+	public XMLStatisticsStorage(String baseFileName) {
 		this.baseFileName = baseFileName;
 	}
 
-	@Override
-	public void update(ConnectionData data) {
-		// static synchronize block
-		try{
-			Thread.sleep(2_000);
-		} catch(InterruptedException ie) {
-
-		}
-
-	}
-
-	@Override
-	public List<IpAddressData> getIpStatistics() {
-		createEventReader("ip");
-		return getIpStatisticsFromFile();
-	}
-
+	
 	@SuppressWarnings("unchecked")
 	private List<IpAddressData> getIpStatisticsFromFile() {
 		ipStatistics = new ArrayList<IpAddressData>();
@@ -125,29 +109,6 @@ public class XMLStatisticsWarehouse implements StatisticsWarehouse {
 		return ipStatistics;
 	}
 
-	@Override
-	public List<ConnectionData> getConnectionStatistics() {
-		createEventReader("conn");
-		return getConnectionStatisticsFromFile();
-	}
-
-	private List<ConnectionData> getConnectionStatisticsFromFile() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public Map<URI, Integer> getRedirectStatistics() {
-		createEventReader("redirect");
-
-		return getRedirectStatisticsFromFile();
-	}
-
-	private Map<URI, Integer> getRedirectStatisticsFromFile() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
 	private void createEventReader(String type) {
 		Path path = Paths.get("statisticsip.xml");
 		InputStream in = null;
@@ -168,6 +129,20 @@ public class XMLStatisticsWarehouse implements StatisticsWarehouse {
 			logger.error("exception occured during reading xml.", e);
 		}
 
+	}
+
+
+	@Override
+	public FullStatisticsData retrieveData() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+
+	@Override
+	public void persistData(FullStatisticsData data) {
+		// TODO Auto-generated method stub
+		
 	}
 
 }

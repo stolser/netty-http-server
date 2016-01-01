@@ -15,10 +15,12 @@ public class NettyHttpServer {
 	static private final Logger logger = LoggerFactory.getLogger(NettyHttpServer.class);
 	private Class<? extends ServerChannel> transport;
 	private int portNumber;
+	private String storageFileName;
 	
 	private NettyHttpServer(NettyHttpServerBuilder builder) {
 		this.transport = builder.transport;
 		this.portNumber = builder.portNumber;
+		this.storageFileName = builder.storageFileName;
 	}
 	
 	public static NettyHttpServerBuilder newBuilder() {
@@ -33,8 +35,9 @@ public class NettyHttpServer {
 			ServerBootstrap bootstrap = new ServerBootstrap();
 			bootstrap.group(bossGroup, workerGroup)
 				.channel(transport)
-				.childHandler(new HttpServerInitializer());
+				.childHandler(new HttpServerInitializer(storageFileName));
 			
+			logger.debug("starting the server: {}", this);
 			ChannelFuture future = bootstrap.bind(portNumber).sync();
 			future.channel().closeFuture().sync();
 		
@@ -52,20 +55,28 @@ public class NettyHttpServer {
 		return portNumber;
 	}
 	
+	public String getStorageFileName() {
+		return storageFileName;
+	}
+
 	@Override
 	public String toString() {
-		return "NettyHttpServer: port = " + portNumber;
+		return "NettyHttpServer [transport = " + transport + ", portNumber = " + portNumber
+				+ ", storageFileName = " + storageFileName + "]";
 	}
 
 	public static class NettyHttpServerBuilder {
 		private static final int DEFAULT_PORT_NUMBER = 8080;
 		private static final Class<? extends ServerChannel> DEFAULT_TRANSPORT = NioServerSocketChannel.class;
+		private static final String DEFAULT_STORAGE_FILE_NAME = "statistics.data";
 		private Class<? extends ServerChannel> transport;
 		private int portNumber;
+		private String storageFileName;
 		
 		private NettyHttpServerBuilder() {
 			transport = DEFAULT_TRANSPORT;
 			portNumber = DEFAULT_PORT_NUMBER;
+			storageFileName = DEFAULT_STORAGE_FILE_NAME;
 		}
 
 		public NettyHttpServerBuilder setTransport(Class<? extends ServerChannel> transport) {
@@ -83,6 +94,12 @@ public class NettyHttpServer {
 			return this;
 		}
 		
+		public NettyHttpServerBuilder setStorageFileName(String storageFileName) {
+			this.storageFileName = storageFileName;
+			
+			return this;
+		}
+
 		public NettyHttpServer build() {
 			return new NettyHttpServer(this);
 		}

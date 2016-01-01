@@ -18,9 +18,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.stolser.nettyserver.server.data.ConnectionData;
+import com.stolser.nettyserver.server.data.FileStatisticsStorage;
 import com.stolser.nettyserver.server.data.FullStatisticsData;
-import com.stolser.nettyserver.server.data.StatisticsWarehouse;
-import com.stolser.nettyserver.server.data.XMLStatisticsWarehouse;
+import com.stolser.nettyserver.server.data.StatisticsDataStorage;
+import com.stolser.nettyserver.server.data.XMLStatisticsStorage;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
@@ -29,17 +30,20 @@ import io.netty.handler.traffic.ChannelTrafficShapingHandler;
 import io.netty.util.concurrent.DefaultEventExecutorGroup;
 import io.netty.util.concurrent.EventExecutorGroup;
 
-public class TrafficCollector extends ChannelOutboundHandlerAdapter {
-	static private final Logger logger = LoggerFactory.getLogger(TrafficCollector.class);
-	private static final String FILE_NAME = "statistics.data";
+public class FullDataCollector extends ChannelOutboundHandlerAdapter {
+	static private final Logger logger = LoggerFactory.getLogger(FullDataCollector.class);
 	private FullStatisticsData fullData;
-	private ChannelHandlerContext context;
+	private String storageFileName;
+
+	public FullDataCollector(String storageFileName) {
+		this.storageFileName = storageFileName;
+	}
 
 	@Override
 	public void write(ChannelHandlerContext context, Object message, ChannelPromise promise) throws Exception {
-		this.context = context;
+		StatisticsDataStorage storage = FileStatisticsStorage.getInstance(storageFileName);
 
-		ConnectionData connData = ((StatisticsCollector)context.pipeline()
+		ConnectionData connData = ((RequestDataCollector)context.pipeline()
 				.get("requestDataCollector"))
 				.getData();
 		long sentBytes = ((ChannelTrafficShapingHandler)context.pipeline()
@@ -57,38 +61,14 @@ public class TrafficCollector extends ChannelOutboundHandlerAdapter {
 				.get("mainHandler")).getRedirectUrl();
 		
 		connData.setReceivedBytes(receivedBytes).setSentBytes(sentBytes).setSpeed(speed);
-
-/*		logger.debug("TrafficCollector.write; ipAddress = {}; hostname = {}"
-				, ((InetSocketAddress)connData.getSourceIp()).getAddress()
-				, ((InetSocketAddress)connData.getSourceIp()).getHostName());*/
 		
 		new Thread(new Runnable() {
 			public void run() {
-				Path path = Paths.get(FILE_NAME);
-				try(ObjectInputStream in = new ObjectInputStream(new BufferedInputStream(
-						new FileInputStream(path.toFile())))) {
-
-					fullData = (FullStatisticsData)in.readObject();
-
-				} catch (Exception e) {
-					logger.debug("exception during reading a file", e);
-				}
-				
+				fullData = storage.retrieveData();
+				/*if a storage file is empty you need to use a direct initialization of fullData
+				 * fullData = new FullStatisticsData();*/
 				fullData.update(connData, numberOfActiveConn, redirect);
-
-				try {
-					new FileOutputStream(Paths.get(FILE_NAME).toFile()).close(); //erase the old file content
-				} catch (Exception e) {
-					logger.debug("exception during erasing the file {}", FILE_NAME, e);
-				}
-
-				try(ObjectOutputStream out = new ObjectOutputStream(new BufferedOutputStream(
-								new FileOutputStream(path.toFile())))) {
-					logger.debug("{}", fullData);
-					out.writeObject(fullData);
-				} catch (Exception e) {
-					logger.debug("exception during writing into the file {}", FILE_NAME, e);
-				}
+				storage.persistData(fullData);
 			}
 		}).start();
 
@@ -104,5 +84,4 @@ public class TrafficCollector extends ChannelOutboundHandlerAdapter {
 
 		context.write(message, promise);
 	}
-
 }

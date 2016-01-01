@@ -27,7 +27,7 @@ public class FullStatisticsData implements Serializable {
 	private static final String HTML_FILE_NAME = "response.html";
 	private static final int INITIAL_BUFFER_CAPACITY = 500;
 	private static final int LOG_ENTRY_MAX_NUMBER = 16;
-	private static final String DATE_FORMAT_PATTERN = "kk:mm:ss:SSS";
+	private static final String DATE_FORMAT_PATTERN = "dd MMM kk:mm:ss";
 	
 	transient private ConnectionData newData;
 	transient private String redirect;
@@ -72,9 +72,9 @@ public class FullStatisticsData implements Serializable {
 			logger.debug("exception during reading a file", e);
 		}
 		
-		for (int i = 0; i < htmlStrings.length; i++) {
+/*		for (int i = 0; i < htmlStrings.length; i++) {
 			logger.debug(htmlStrings[i]);
-		}
+		}*/
 		
 		totalNumberOfRequests = 0;
 		AtomicInteger accumulator = new AtomicInteger(totalNumberOfRequests);
