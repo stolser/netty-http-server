@@ -9,8 +9,9 @@ import java.util.List;
 import com.google.common.base.Preconditions;
 
 public class IpAddressData implements Serializable {
-	private SocketAddress ipAddress;
+	private static final long serialVersionUID = 4596687113110691949L;
 	private int totalRequests;
+	private SocketAddress ipAddress;
 	private List<String> uniqueRequests;
 	private Date timeOfLastRequest;
 	

@@ -27,10 +27,6 @@ public class NettyHttpServerTest {
 		Class<? extends ServerChannel> expectedTransport = defaultTransport;
 		Class<? extends ServerChannel> actualTransport = server.getTransport();
 		assertEquals(expectedTransport, actualTransport);
-		
-		String expectedServerToString = "NettyHttpServer: port = " + defaultPort;
-		String actualServerToString = server.toString();
-		assertEquals(expectedServerToString, actualServerToString);
 	}
 
 	@Test
@@ -49,9 +45,6 @@ public class NettyHttpServerTest {
 		Class<? extends ServerChannel> actualTransport = server.getTransport();
 		assertEquals(expectedTransport, actualTransport);
 		
-		String expectedServerToString = "NettyHttpServer: port = " + port;
-		String actualServerToString = server.toString();
-		assertEquals(expectedServerToString, actualServerToString);
 	}
 	
 	@Test

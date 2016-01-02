@@ -26,7 +26,7 @@ public class ConnectionDataTest {
 			
 		assertTrue(conn1.equals(conn1));
 		assertFalse(conn1.equals(conn2));
-		assertEquals(3, new HashSet(Arrays.asList(conn1, conn2, conn3, conn3)).size());
+		assertEquals(3, new HashSet<ConnectionData>(Arrays.asList(conn1, conn2, conn3, conn3)).size());
 				
 	}
 

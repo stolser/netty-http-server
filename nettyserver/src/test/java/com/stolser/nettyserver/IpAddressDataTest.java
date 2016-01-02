@@ -35,9 +35,8 @@ public class IpAddressDataTest {
 		assertEquals(3, ip.getUniqueRequests().size());
 	}
 	
-	@Test(expected = IllegalArgumentException.class)
 	public void addUniqueRequestsWhenNullPassed() {
-		ip.addRequestIfUnique(null);
+		assertFalse(ip.addRequestIfUnique(null));;
 	}
 	
 	@Test

@@ -26,7 +26,6 @@ public class RequestDataCollector extends ChannelInboundHandlerAdapter {
 
 	@Override
 	public void channelRead(ChannelHandlerContext context, Object message) {
-		logger.debug("RequestDataCollector.channelRead");
 		request = (FullHttpRequest)message;
 		this.context = context;
 		
@@ -41,7 +40,7 @@ public class RequestDataCollector extends ChannelInboundHandlerAdapter {
 		Date timestamp = new Date();
 		
 		data = new ConnectionData(sourceIp, uri, timestamp);
-		
+		logger.debug("channelRead: data = {}", data);
 	}
 
 	public ConnectionData getData() {

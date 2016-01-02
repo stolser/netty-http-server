@@ -32,16 +32,18 @@ public class MainHttpHandler extends SimpleChannelInboundHandler<FullHttpRequest
 	private static final Logger logger = LoggerFactory.getLogger(MainHttpHandler.class);
 	private static final String REDIRECT_PARAM_NAME = "url";
 	private static final String DEFAULT_REDIRECT_URL = "http://example.com";
+	private static final int NUMBER_OF_THREADS = 400;
+	private static EventExecutorGroup group = new DefaultEventExecutorGroup(NUMBER_OF_THREADS);
+	private final StringBuilder defaultContent;
 	private ChannelHandlerContext context;
 	private FullHttpRequest request;
 	private FullHttpResponse response;
 	private String redirectUrl;
 	private String storageFileName;
-	/**A Buffer that stores the response content */
-	private final StringBuilder defaultContent = new StringBuilder("<h1>Oops! Nothing found!!!</h1>");
-	
+
 	public MainHttpHandler(String storageFileName) {
 		this.storageFileName = storageFileName;
+		defaultContent = new StringBuilder("<h1>Oops! Nothing found!!!</h1>");
 	}
 
 	@Override
@@ -49,33 +51,51 @@ public class MainHttpHandler extends SimpleChannelInboundHandler<FullHttpRequest
 		this.request = request;
 		this.context = context;
 
-		logger.debug("MainHttpHandler.channelRead0; uri = {}", request.getUri());
-		String requestedUri = request.getUri();
-
-		if("/hello".equalsIgnoreCase(requestedUri)) {
-			context.pipeline().addLast("helloHandler", new HelloUriHandler());
-			context.fireChannelRead(request.retain());
-			
-		} else if(requestedUri.startsWith("/redirect")) {
-			createRedirectResponse();
-			context.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
-			
-		} else if("/status".equalsIgnoreCase(requestedUri)) {
-			EventExecutorGroup group = new DefaultEventExecutorGroup(16);
-			context.pipeline().addLast(group, "statusHandler", new StatusUriHandler(storageFileName));
-			context.fireChannelRead(request.retain());
-			
+		String requestedUri = request.getUri().toLowerCase();
+		logger.debug("channelRead0; uri = {}", request.getUri());
+		
+		if(requestedUri.startsWith("/redirect")) {
+			createAndSendRedirect();
 		} else {
-			response = new DefaultFullHttpResponse(HTTP_1_1, OK, Unpooled.wrappedBuffer(
-					(defaultContent.toString()).getBytes()));
-			context.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
+			switch (requestedUri) {
+			case "/hello":
+				addHandlerForHelloPage();
+				break;
+			case "/status":
+				addHandlerForStatusPage();
+				break;
+			default:
+				createAndSendDefaultResponse();
+				break;
+			}
 		}
 	}
-
+	
 	@Override
 	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
 		logger.error("Exception during pipelining.", cause);
 		ctx.close();
+	}
+
+	private void addHandlerForHelloPage() {
+		context.pipeline().addLast("helloHandler", new HelloUriHandler());
+		context.fireChannelRead(request.retain());
+	}
+
+	private void createAndSendRedirect() {
+		createRedirectResponse();
+		context.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
+	}
+
+	private void addHandlerForStatusPage() {
+		context.pipeline().addLast(group, "statusHandler", new StatusUriHandler(storageFileName));
+		context.fireChannelRead(request.retain());
+	}
+
+	private void createAndSendDefaultResponse() {
+		response = new DefaultFullHttpResponse(HTTP_1_1, OK, Unpooled.wrappedBuffer(
+				(defaultContent.toString()).getBytes()));
+		context.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
 	}
 
 	private void createRedirectResponse() {
@@ -91,11 +111,11 @@ public class MainHttpHandler extends SimpleChannelInboundHandler<FullHttpRequest
 		if (params.containsKey(REDIRECT_PARAM_NAME)) {
 			url = params.get(REDIRECT_PARAM_NAME).get(0);
 		}
-		
+
 		if ((url == null) || ("".equals(url))) {
 			url = DEFAULT_REDIRECT_URL;
 		}
-		logger.debug("url = {}", url);
+
 		return url;
 	}
 
