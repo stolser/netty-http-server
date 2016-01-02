@@ -1,6 +1,7 @@
 package com.stolser.nettyserver.server.data;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 import java.io.Serializable;
 import java.net.InetSocketAddress;
@@ -10,10 +11,17 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.ConcurrentNavigableMap;
+import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+
+
+
 
 
 
@@ -31,17 +39,18 @@ public class FullStatisticsData implements Serializable {
 	
 	transient private ConnectionData newData;
 	transient private String redirect;
-	private List<IpAddressData> ipAddressDatas;
-	private NavigableMap<Date, ConnectionData> connectionDatas;
-	private SortedMap<String, Integer> redirects;
-	private Integer numberOfActiveConn;
-	private int totalNumberOfRequests;
 	private int numberOfUniqueRequests;
+	private List<IpAddressData> ipAddressDatas;
+	private ConcurrentNavigableMap<Date, ConnectionData> connectionDatas;
+	private ConcurrentNavigableMap<String, Integer> redirects;
+	private int totalNumberOfRequests;
+	private Integer numberOfActiveConn;
 	
 	public FullStatisticsData() {
-		this.ipAddressDatas = new ArrayList<IpAddressData>();
-		this.connectionDatas = new TreeMap<Date, ConnectionData>();
-		this.redirects = new TreeMap<String, Integer>();
+		this.ipAddressDatas = new CopyOnWriteArrayList<IpAddressData>();
+		this.connectionDatas = new ConcurrentSkipListMap<Date, ConnectionData>();
+		this.redirects = new ConcurrentSkipListMap<String, Integer>();
+		this.totalNumberOfRequests = 0;
 		this.numberOfActiveConn = 0;
 	}
 
@@ -52,6 +61,9 @@ public class FullStatisticsData implements Serializable {
 		this.numberOfActiveConn = number;
 		this.redirect = redirect;
 		
+		totalNumberOfRequests++;
+		logger.debug("update: totalNumberOfRequests = {}", totalNumberOfRequests);
+		
 		updateIpAddressData();
 		updateConnectionData();
 		updateRedirects();
@@ -59,38 +71,10 @@ public class FullStatisticsData implements Serializable {
 	
 	public String generateHtmlContent() {
 		StringBuffer result = new StringBuffer(INITIAL_BUFFER_CAPACITY);
-		String[] htmlStrings = new String[7];
+		String[] htmlStrings = readHtmlStringsFromFile();
 		
-		Path path = Paths.get(HTML_FILE_NAME);
-		try(BufferedReader out = new BufferedReader(new FileReader(path.toFile()))) {
-
-			for (int i = 0; i < htmlStrings.length; i++) {
-				htmlStrings[i] = out.readLine();
-			}
-
-		} catch (Exception e) {
-			logger.debug("exception during reading a file", e);
-		}
-		
-/*		for (int i = 0; i < htmlStrings.length; i++) {
-			logger.debug(htmlStrings[i]);
-		}*/
-		
-		totalNumberOfRequests = 0;
-		AtomicInteger accumulator = new AtomicInteger(totalNumberOfRequests);
-		ipAddressDatas.forEach(e -> {
-			accumulator.accumulateAndGet(e.getTotalRequests(), ( a, b ) -> a + b);
-		});
-		totalNumberOfRequests = accumulator.intValue();
-		
-		
-		numberOfUniqueRequests = 0;
-		AtomicInteger accumulator2 = new AtomicInteger(numberOfUniqueRequests);
-		ipAddressDatas.forEach(e -> {
-			accumulator2.accumulateAndGet(e.getUniqueRequests().size(), ( a, b ) -> a + b);
-		});
-		numberOfUniqueRequests = accumulator2.intValue();
-		
+		numberOfUniqueRequests = calculateUniqueRequestsNumber();
+			
 		result.append(htmlStrings[0]).append(numberOfActiveConn)
 			.append(htmlStrings[1]).append(totalNumberOfRequests)
 			.append(htmlStrings[2]).append(numberOfUniqueRequests)
@@ -102,6 +86,32 @@ public class FullStatisticsData implements Serializable {
 		return result.toString();
 	}
 	
+	private int calculateUniqueRequestsNumber() {
+		AtomicInteger accumulator = new AtomicInteger(0);
+		ipAddressDatas.forEach(e -> {
+			accumulator.accumulateAndGet(e.getUniqueRequests().size(), ( a, b ) -> a + b);
+		});
+
+		return accumulator.intValue();
+	}
+
+	private String[] readHtmlStringsFromFile() {
+		String[] htmlStrings = new String[7];
+		
+		File file = new File(HTML_FILE_NAME);
+		try(BufferedReader out = new BufferedReader(new FileReader(file))) {
+
+			for (int i = 0; i < htmlStrings.length; i++) {
+				htmlStrings[i] = out.readLine();
+			}
+
+		} catch (Exception e) {
+			logger.debug("exception during reading a file {}", HTML_FILE_NAME, e);
+		}
+		
+		return htmlStrings;
+	}
+
 	private String generateHtmlForRequestsTable() {
 		final int rowNumber = 3;
 		List<String[]> data = new ArrayList<String[]>();
@@ -173,7 +183,7 @@ public class FullStatisticsData implements Serializable {
 		Date newDate = newData.getTimestamp();
 		
 		Optional<IpAddressData> existing = ipAddressDatas.stream()
-				.filter(e -> newURI.equals(e.getIpAddress()))
+				.filter(e -> newIp.equals(e.getIpAddress()))
 				.findAny();
 		if (existing.isPresent()) {
 			IpAddressData ipData = existing.get();
@@ -214,9 +224,22 @@ public class FullStatisticsData implements Serializable {
 	}
 	
 	private String generateHtmlForTable(List<String[]> data) {
+		int visibleRowsLimit = 20;
 		StringBuffer result = new StringBuffer(INITIAL_BUFFER_CAPACITY);
+		int dataSize = data.size();
+		
+		if (dataSize > visibleRowsLimit) {
+			result.append("<tfoot><tr><td colspan='10'>The total number of rows (unique ip): " + dataSize + 
+							"&nbsp;&nbsp;&nbsp;<button id='toggle'>Show all</button></td></tr></tfoot>");
+		}
+		
 		for (int i = 0; i < data.size(); i++) {
-			result.append("<tr>");
+			if (i < visibleRowsLimit) {
+				result.append("<tr>");
+			} else {
+				result.append("<tr class='beyondLimit'>");
+			}
+			
 			String[] row = data.get(i);
 			for (int j = 0; j < row.length; j++) {
 				result.append("<td>" + row[j] + "</td>");
@@ -229,10 +252,10 @@ public class FullStatisticsData implements Serializable {
 
 	public void fillWithRandomDummyData() {
 		ipAddressDatas = new ArrayList<>();
-		redirects = new TreeMap<>();
+		redirects = new ConcurrentSkipListMap<>();
 		redirects.put("localhost", 101);
 		redirects.put("ukr.net", 10);
-		
+		redirects.put("oracle.com", 3);
 		numberOfActiveConn = 10025;
 
 	}

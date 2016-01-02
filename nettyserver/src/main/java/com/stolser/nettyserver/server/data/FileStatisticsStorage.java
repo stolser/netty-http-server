@@ -1,6 +1,7 @@
 package com.stolser.nettyserver.server.data;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.ObjectInputStream;
@@ -24,9 +25,11 @@ public class FileStatisticsStorage implements StatisticsDataStorage {
 	private static Map<String, FileStatisticsStorage> fileAccessors = new HashMap<>();
 	private ReadWriteLock lock = new ReentrantReadWriteLock(true);
 	private String storageFileName;
+	private File file;
 	
 	private FileStatisticsStorage(String storageFileName) {
 		this.storageFileName = storageFileName;
+		file = Paths.get(storageFileName).toFile();
 	}
 	
 	public static FileStatisticsStorage getInstance(String fileName) {
@@ -46,18 +49,9 @@ public class FileStatisticsStorage implements StatisticsDataStorage {
 
 	@Override
 	public FullStatisticsData retrieveData() {
-		FullStatisticsData fullData = null;
-		Path path = Paths.get(storageFileName);
 		
 		lock.readLock().lock();
-		try(ObjectInputStream in = new ObjectInputStream(new BufferedInputStream(
-				new FileInputStream(path.toFile())))) {
-			
-			fullData = (FullStatisticsData)in.readObject();
-
-		} catch (Exception e) {
-			logger.debug("exception during reading a file {}", storageFileName, e);
-		}
+		FullStatisticsData fullData = readDataFromFile();
 		lock.readLock().unlock();
 		
 		return fullData;
@@ -65,29 +59,49 @@ public class FileStatisticsStorage implements StatisticsDataStorage {
 
 	@Override
 	public void persistData(FullStatisticsData data) {
-		Path path = Paths.get(storageFileName);
 
 		lock.writeLock().lock();
+		eraseFileOldContent();
+		writeDataIntoFile(data);
+		lock.writeLock().unlock();
+	}
+	
+	private void writeDataIntoFile(FullStatisticsData data) {
 		try(ObjectOutputStream out = new ObjectOutputStream(new BufferedOutputStream(
-				new FileOutputStream(path.toFile())))) {
-			//erase the old file content
+				new FileOutputStream(file)))) {
+	
+			out.writeObject(data);
+			out.flush();
+			
+		} catch (Exception e) {
+			logger.debug("exception during writing into the file {}", storageFileName, e);
+		}
+	}
+
+	private void eraseFileOldContent() {
+		try(ObjectOutputStream out = new ObjectOutputStream(new BufferedOutputStream(
+				new FileOutputStream(file)))) {
+			
 			out.flush();
 			out.close();
 			
 		} catch (Exception e) {
 			logger.debug("exception during erasing the file {}", storageFileName, e);
 		}
-		lock.writeLock().unlock();
+	}
 
-		lock.writeLock().lock();
-		try(ObjectOutputStream out = new ObjectOutputStream(new BufferedOutputStream(
-						new FileOutputStream(path.toFile())))) {
+	private FullStatisticsData readDataFromFile() {
+		FullStatisticsData fullData = null;
+		try(ObjectInputStream in = new ObjectInputStream(new BufferedInputStream(
+				new FileInputStream(file)))) {
 			
-			out.writeObject(data);
-			
+			fullData = (FullStatisticsData)in.readObject();
+
 		} catch (Exception e) {
-			logger.debug("exception during writing into the file {}", storageFileName, e);
+			logger.debug("exception during reading a file {}", storageFileName, e);
 		}
-		lock.writeLock().unlock();
+		
+		return fullData;
+		
 	}
 }
