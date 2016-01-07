@@ -26,11 +26,15 @@ import org.slf4j.LoggerFactory;
 
 
 
+import org.slf4j.Marker;
+import org.slf4j.MarkerFactory;
+
 import com.google.common.base.Preconditions;
 import com.stolser.nettyserver.server.handlers.MainHttpHandler;
 
 public class FullStatisticsData implements Serializable {
 	private static final Logger logger = LoggerFactory.getLogger(FullStatisticsData.class);
+	private static final Marker connectionCounterMarker = MarkerFactory.getMarker("connectionCounter");
 	private static final long serialVersionUID = 1236547L;
 	private static final String HTML_FILE_NAME = "response.html";
 	private static final int INITIAL_BUFFER_CAPACITY = 500;
@@ -62,7 +66,7 @@ public class FullStatisticsData implements Serializable {
 		this.redirect = redirect;
 		
 		totalNumberOfRequests++;
-		logger.debug("update: totalNumberOfRequests = {}", totalNumberOfRequests);
+		logger.debug(connectionCounterMarker, "totalNumberOfRequests = {}", totalNumberOfRequests);
 		
 		updateIpAddressData();
 		updateConnectionData();

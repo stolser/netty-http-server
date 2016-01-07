@@ -32,8 +32,8 @@ public class MainHttpHandler extends SimpleChannelInboundHandler<FullHttpRequest
 	private static final Logger logger = LoggerFactory.getLogger(MainHttpHandler.class);
 	private static final String REDIRECT_PARAM_NAME = "url";
 	private static final String DEFAULT_REDIRECT_URL = "http://example.com";
-	private static final int NUMBER_OF_THREADS = 400;
-	private static EventExecutorGroup group = new DefaultEventExecutorGroup(NUMBER_OF_THREADS);
+	private static final int NUMBER_OF_THREADS = 200;
+	private static EventExecutorGroup groupForStatusUriHandler = new DefaultEventExecutorGroup(NUMBER_OF_THREADS);
 	private final StringBuilder defaultContent;
 	private ChannelHandlerContext context;
 	private FullHttpRequest request;
@@ -88,13 +88,13 @@ public class MainHttpHandler extends SimpleChannelInboundHandler<FullHttpRequest
 	}
 
 	private void addHandlerForStatusPage() {
-		context.pipeline().addLast(group, "statusHandler", new StatusUriHandler(storageFileName));
+		context.pipeline().addLast(groupForStatusUriHandler, "statusHandler", new StatusUriHandler(storageFileName));
 		context.fireChannelRead(request.retain());
 	}
 
 	private void createAndSendDefaultResponse() {
 		response = new DefaultFullHttpResponse(HTTP_1_1, OK, Unpooled.wrappedBuffer(
-				(defaultContent.toString()).getBytes()));
+				defaultContent.toString().getBytes()));
 		context.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
 	}
 

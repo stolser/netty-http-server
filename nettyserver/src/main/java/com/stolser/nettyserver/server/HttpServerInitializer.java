@@ -16,8 +16,8 @@ import io.netty.util.concurrent.EventExecutorGroup;
 
 public class HttpServerInitializer extends ChannelInitializer<SocketChannel>{
 	private static final int MAX_CONTENT_LENGTH = 512 * 1024; // 512kb
-	private static final int NUMBER_OF_THREADS = 400;
-	private static EventExecutorGroup group = new DefaultEventExecutorGroup(NUMBER_OF_THREADS);
+	private static final int NUMBER_OF_THREADS = 200;
+	private static EventExecutorGroup groupForFullDataCollector = new DefaultEventExecutorGroup(NUMBER_OF_THREADS);
 	private final ActiveConnectionsCounter activeConnectionsCounter = new ActiveConnectionsCounter();
 	private String storageFileName;
 	
@@ -29,7 +29,7 @@ public class HttpServerInitializer extends ChannelInitializer<SocketChannel>{
 	protected void initChannel(SocketChannel channel) throws Exception {
 		ChannelPipeline pipeline = channel.pipeline();
 		
-		pipeline.addLast(group, "trafficCollector", new FullDataCollector(storageFileName));
+		pipeline.addLast(groupForFullDataCollector, "trafficCollector", new FullDataCollector(storageFileName));
 		pipeline.addLast("trafficCounter", new ChannelTrafficShapingHandler(1000));
 		pipeline.addLast("connCounter", activeConnectionsCounter);
 		pipeline.addLast("codec", new HttpServerCodec());

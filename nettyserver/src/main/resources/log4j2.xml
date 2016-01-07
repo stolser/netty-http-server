@@ -1,15 +1,36 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration status="WARN">
+    <Properties>
+        <Property name="LOG_DIR">D:\GitRepos\nettyserver\nettyserver\logs</Property>
+        <Property name="ARCHIVE">${LOG_DIR}\myRollingLogs\archive</Property>
+        <Property name="PATTERN">%-5level %d{dd-MM HH:mm} %c:%M(%L): %m%n</Property>
+        <Property name="PATTERN_DEFAULT">%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n</Property>
+    </Properties>
 	<Appenders>
 		<Console name="Console" target="SYSTEM_OUT">
-			<PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n" />
+			<PatternLayout pattern="${PATTERN_DEFAULT}" />
 		</Console>
+		<Console name="ConsoleConnCounter" target="SYSTEM_OUT">
+			<PatternLayout pattern="${PATTERN_DEFAULT}" />
+			<MarkerFilter marker="connectionCounter" onMatch="ACCEPT" onMismatch="DENY"/>
+		</Console>
+		<File name="ErrorLogFile" fileName="${LOG_DIR}\error.log" 
+            immediateFlush="false" append="true">
+            <PatternLayout pattern="${PATTERN}"/>
+        </File>
+		<RollingFile name="RollingLogFile"
+                     fileName="${LOG_DIR}\myRollingLogs\all.log"
+                     filePattern="${ARCHIVE}\all.log.%d{yyyy-MM-dd-hh-mm}.gz"
+                     immediateFlush="false" append="true">
+            <PatternLayout pattern="${PATTERN}"/>
+            <TimeBasedTriggeringPolicy/>
+        </RollingFile>
 	</Appenders>
 	<Loggers>
-		<Logger name="com.foo.Bar" level="trace">
-			<AppenderRef ref="Console" />
+		<Logger name="com.stolser.nettyserver.server.data.FullStatisticsData" level="trace" additivity="false">
+			<AppenderRef ref="ConsoleConnCounter" />
 		</Logger>
-		<Root level="debug">
+		<Root level="error">
 			<AppenderRef ref="Console" />
 		</Root>
 	</Loggers>

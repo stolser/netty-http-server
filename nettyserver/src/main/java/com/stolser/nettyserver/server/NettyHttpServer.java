@@ -13,7 +13,7 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 
 public class NettyHttpServer {
 	static private final Logger logger = LoggerFactory.getLogger(NettyHttpServer.class);
-	private static final int NUMBER_OF_WORKERS = 10;
+	private static final int NUMBER_OF_WORKERS = 16;
 	private Class<? extends ServerChannel> transport;
 	private int portNumber;
 	private String storageFileName;
