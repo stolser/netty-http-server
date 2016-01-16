@@ -18,20 +18,20 @@ import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.traffic.ChannelTrafficShapingHandler;
 import io.netty.util.ReferenceCountUtil;
 
-public class RequestDataCollector extends ChannelInboundHandlerAdapter {
+public class RequestDataCollector extends SimpleChannelInboundHandler<FullHttpRequest> {
 	static private final Logger logger = LoggerFactory.getLogger(RequestDataCollector.class);
 	private ConnectionData data;
 	private FullHttpRequest request;
 	private ChannelHandlerContext context;
 
 	@Override
-	public void channelRead(ChannelHandlerContext context, Object message) {
-		request = (FullHttpRequest)message;
+	protected void channelRead0(final ChannelHandlerContext context, FullHttpRequest request) throws Exception {
+		this.request = request;
 		this.context = context;
 		
 		retrieveConnectionData();
 
-		context.fireChannelRead(message);
+		context.fireChannelRead(request.retain());
 	}
 
 	private void retrieveConnectionData() {
