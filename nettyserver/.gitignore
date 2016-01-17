@@ -1,4 +1,6 @@
 /target/
 /.settings/
 /statistics.data
+*.data
 *.jar
+/logs/
