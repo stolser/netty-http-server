@@ -40,19 +40,6 @@ public class FullDataCollector extends ChannelOutboundHandlerAdapter {
 		context.flush();
 	}
 
-	private void updateDataInFile() {
-		StatisticsDataStorage storage = FileStatisticsStorage.getInstance(storageFileName);
-		
-		synchronized(storage) {
-			fullData = storage.retrieveData();
-			/* if a storage file is empty or you want to reset the file just use one time a direct initialization of fullData:
-			fullData = new FullStatisticsData();
-			 * */
-			fullData.update(connData, numberOfActiveConn, redirect);
-			storage.persistData(fullData);
-		}
-	}
-
 	private void collectAllStatisticsData() {
 		connData = ((RequestDataCollector)context.pipeline()
 				.get("requestDataCollector"))
@@ -72,5 +59,18 @@ public class FullDataCollector extends ChannelOutboundHandlerAdapter {
 		numberOfActiveConn = ((ActiveConnectionsCounter)context.pipeline()
 				.get("connCounter")).getCounter();
 		redirect = ((MainHttpHandler)context.pipeline().get("mainHandler")).getRedirectUrl();
+	}
+	
+	private void updateDataInFile() {
+		StatisticsDataStorage storage = FileStatisticsStorage.getInstance(storageFileName);
+		
+		synchronized(storage) {
+			fullData = storage.retrieveData();
+			/* if a storage file is empty or you want to reset the file just use one time a direct initialization of fullData:
+			fullData = new FullStatisticsData();
+			 * */
+			fullData.update(connData, numberOfActiveConn, redirect);
+			storage.persistData(fullData);
+		}
 	}
 }
