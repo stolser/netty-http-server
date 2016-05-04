@@ -29,12 +29,11 @@ public class NettyHttpServer {
 	}
 	
 	public void start() throws InterruptedException {
-		EventLoopGroup bossGroup = new NioEventLoopGroup();
-		EventLoopGroup workerGroup = new NioEventLoopGroup();
+		EventLoopGroup group = new NioEventLoopGroup();
 		
 		try{
 			ServerBootstrap bootstrap = new ServerBootstrap();
-			bootstrap.group(bossGroup, workerGroup)
+			bootstrap.group(group, group)
 				.channel(transport)
 				.childHandler(new HttpServerInitializer(storageFileName));
 			
@@ -43,8 +42,7 @@ public class NettyHttpServer {
 			future.channel().closeFuture().sync();
 		
 		} finally {
-			workerGroup.shutdownGracefully();
-			bossGroup.shutdownGracefully();
+			group.shutdownGracefully();
 		}
 	}
 	
